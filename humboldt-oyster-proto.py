@@ -6,7 +6,7 @@ import os
 from dateutil import tz
 import seaborn as sns
 import numpy as np
-import airsea
+import airsea, warnings
 from astral import sun, Observer
 
 def get_shore_station_data():
@@ -143,11 +143,13 @@ def copy_file_to_webserver(FILE):
     """Copy images from to webserver where they can be viewed publically."""
     try:
         os.system('scp -i /etc/ssh/keys/pdaniel/scp_rsa {} skyrocket8.mbari.org:/var/www/html/data/oyster-dash-proto/ '.format(FILE))
-        print("Copied {} to webserver.".format(FILE))
+        # print("Copied {} to webserver.".format(FILE))
     except Exception as e:
         print(e)
         
 
 if __name__ == "__main__":
+    warnings.filterwarnings("ignore")
+
     generate_plot()
     copy_file_to_webserver("humboldt_bay_conditions.png")

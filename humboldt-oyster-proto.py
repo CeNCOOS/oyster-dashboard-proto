@@ -28,12 +28,15 @@ def get_wind_data():
     """
     url = 'http://erddap.cencoos.org/erddap/tabledap/wmo_46022.csvp?time%2Csea_water_temperature%2Cwind_speed%2Cwind_from_direction&time>now-7days'
     headers= ['time','wtemp_offshore','wind_speed_ms','wind_from_direction']
-    wind_df = pd.read_csv(url,names=headers,skiprows=1)
-    wind_df['dateTime'] = pd.to_datetime(wind_df['time'])
-    wind_df.index = wind_df['dateTime']
-    wind_df = wind_df.tz_convert('US/Pacific')
-    wind_df.resample('1h').nearest()
-    return wind_df
+    try:
+        wind_df = pd.read_csv(url,names=headers,skiprows=1)
+        wind_df['dateTime'] = pd.to_datetime(wind_df['time'])
+        wind_df.index = wind_df['dateTime']
+        wind_df = wind_df.tz_convert('US/Pacific')
+        wind_df.resample('1h').nearest()
+        return wind_df
+    except Exception as e:
+        return None
 
 def process_wind(wind_df):
     """Calculate upwelling (ekman transport) from wind data and resample
@@ -67,9 +70,7 @@ def add_nighttime(ax,sunrise,sunset,stime,etime):
 def generate_plot():
     df, df_hourly, df_rolling = get_shore_station_data()
     wind_df = get_wind_data()
-    ekman = process_wind(wind_df)
     sunset, sunrise = get_sunset_sunrise(df)
-
     stime = df.index.max() + dt.timedelta(hours=1)
     etime = stime - dt.timedelta(days=7)
     fig, (ax_temp,ax_chl,ax_ph,ax_wind) = plt.subplots(4,sharex=True,gridspec_kw=dict(hspace=0.3))
@@ -78,8 +79,9 @@ def generate_plot():
     ax_temp = add_nighttime(ax_temp,sunrise,sunset,stime,etime)
     ax_temp.scatter(df_hourly.index,df_hourly['swtemp'],s=5,c='#4876B1')
     ax_temp.plot(df_rolling.index,df_rolling['swtemp'],color='#4876B1',label='Bay')
-    ax_temp.plot(wind_df.index, wind_df['wtemp_offshore'],color='#B14E48',lw=2,label='Offshore')
-
+    if wind_df is not None:
+        ekman = process_wind(wind_df)
+        ax_temp.plot(wind_df.index, wind_df['wtemp_offshore'],color='#B14E48',lw=2,label='Offshore')
 
     ax_temp.get_xaxis().set_visible(False)
     sns.despine(ax=ax_temp,bottom=True,trim=False);
@@ -92,8 +94,6 @@ def generate_plot():
     leg = ax_temp.legend(frameon=True,loc='best',fontsize=14)
     for legobj in leg.legendHandles:
         legobj.set_linewidth(3.0)
-
-
 
 
     ax_chl = add_nighttime(ax_chl,sunrise,sunset,stime,etime)
@@ -112,19 +112,20 @@ def generate_plot():
     ax_ph = add_nighttime(ax_ph,sunrise,sunset,stime,etime)
     ax_ph.scatter(df_hourly.index,df_hourly['pH'],s=5,c='#E16F1C')
     ax_ph.plot(df_rolling.index,df_rolling['pH'], color='#E16F1C')
-    ax_ph.set_ylim(7.8,8.1)
+    ax_ph.set_ylim(7.5,8.2)
     ax_ph.get_xaxis().set_visible(False)
     ax_ph.set_ylabel('pH',rotation=0,labelpad=90,size=20,color='#E16F1C',fontweight='bold')
     sns.despine(ax=ax_ph,offset=0,bottom=True,trim=True);
     ax_ph.tick_params(axis='y', labelsize=14)
     ax_ph.yaxis.set_label_coords(1.05,.42)
 
-
-
     ax_wind = add_nighttime(ax_wind,sunrise,sunset,stime,etime)
-    ax_wind.plot(ekman.index,ekman,color='#8DCBD9',lw=4)
-    ax_wind.plot(ekman.index,ekman,color='k',lw=1)
-    ax_wind.fill_between(ekman.index,ekman,0,color='#8DCBD9',alpha=.5)
+    if wind_df is not None:
+        ax_wind.plot(ekman.index,ekman,color='#8DCBD9',lw=4)
+        ax_wind.plot(ekman.index,ekman,color='k',lw=1)
+        ax_wind.fill_between(ekman.index,ekman,0,color='#8DCBD9',alpha=.5)
+    else:
+        ax_wind.text(.3,.65,'Data Unavailable',color='k',size=18,transform=ax_wind.transAxes)
     ax_wind.hlines(0,stime,etime,color='k',zorder=1)
     ax_wind.set_ylabel('Upwelling Index',rotation=0,labelpad=90,size=20,color='#8DCBD9',fontweight='bold')
     ax_wind.yaxis.set_label_coords(1.2,.42)
@@ -134,7 +135,7 @@ def generate_plot():
     ax_wind.xaxis.set_major_formatter(date_fmt)
     ax_wind.xaxis.set_minor_locator(mdates.HourLocator(12,tz=tz.gettz('US/Pacific')))
     ax_wind.tick_params(axis='both', labelsize=14)
-
+    ax_wind.set_ylim(-2,2)
     ax_wind.set_xlim(etime,stime)
     ax_wind.text(0,-.3,'Updated on: {}'.format(dt.datetime.now()),transform=ax_wind.transAxes)
     plt.savefig('humboldt_bay_conditions.png',dpi=300,bbox_inches='tight', pad_inches=0.1,)

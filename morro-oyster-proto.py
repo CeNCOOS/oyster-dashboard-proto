@@ -16,9 +16,14 @@ for handler in logging.root.handlers[:]:
 logging.basicConfig(filename='./oyster.log', level=logging.ERROR)
 
 
-def get_shore_station_data():
+def get_shore_station_data(back_bay=False):
     '''Get shore station data from the CeNCOOS ERDDAP'''
-    url = "http://erddap.cencoos.org/erddap/tabledap/morro-bay-bs1.csvp?time%2Cmass_concentration_of_chlorophyll_in_sea_water%2Cmass_concentration_of_oxygen_in_sea_water%2Cfractional_saturation_of_oxygen_in_sea_water%2Csea_water_practical_salinity%2Csea_water_temperature%2Csea_water_turbidity%2Csea_water_ph_reported_on_total_scale_internal%2Csea_water_ph_reported_on_total_scale_external&time>now-7days"
+    if back_bay:
+        url = "http://erddap.cencoos.org/erddap/tabledap/morro-bay-bs1.csvp?time%2Cmass_concentration_of_chlorophyll_in_sea_water%2Cmass_concentration_of_oxygen_in_sea_water%2Cfractional_saturation_of_oxygen_in_sea_water%2Csea_water_practical_salinity%2Csea_water_temperature%2Csea_water_turbidity%2Csea_water_ph_reported_on_total_scale_internal%2Csea_water_ph_reported_on_total_scale_external&time>now-7days"
+
+    else:
+        url = "http://erddap.cencoos.org/erddap/tabledap/edu_calpoly_marine_morro.csvp?time%2Cmass_concentration_of_chlorophyll_in_sea_water%2Cmass_concentration_of_oxygen_in_sea_water%2Cfractional_saturation_of_oxygen_in_sea_water%2Csea_water_practical_salinity%2Csea_water_temperature%2Csea_water_turbidity%2Csea_water_ph_reported_on_total_scale_internal%2Csea_water_ph_reported_on_total_scale_external&time>now-7days"
+    
     headers= ['time','chlorophyll','oxygen_conc','oxygen_frac','salinity','swtemp','turbidity','pH_internal','pH_external']
     try:
         df = pd.read_csv(url, names=headers,skiprows=1)
@@ -26,8 +31,7 @@ def get_shore_station_data():
         df.index = df['dateTime']
         df = df.tz_convert('US/Pacific')
         df_hourly = df.resample('1H').mean()
-        df_rolling = df[["chlorophyll","oxygen_conc","oxygen_frac","salinity","swtemp","turbidity","pH_internal","pH_external"]].rolling(window=12,center=True,win_type='boxcar').mean()
-        df_hourly.tail()
+        df_rolling = df[["chlorophyll","oxygen_conc","oxygen_frac","salinity","swtemp","turbidity","pH_internal","pH_external"]].rolling(window=12,center=True,win_type='hamming').mean()
         return df, df_hourly, df_rolling
     except urllib.error.HTTPError:
         logging.error("Trouble reaching the CeNCOOS ERDDAP",exc_info=True)
@@ -59,11 +63,10 @@ def process_wind(wind_df):
     ekman = (-1/0.935)*v # 1/coriolis parameter
     return(ekman)
 
-def get_sunset_sunrise(df):
+def get_sunset_sunrise(days=7):
     """Using the `astral` api package we can request sunrise and sunset times for humboldt to use for shading the plots."""
 
-    days = 7
-    stime = df['dateTime'].max()
+    stime = dt.date.today()
     etime = stime - dt.timedelta(days=days)
     obs = Observer(latitude=35.339658, longitude=-120.850287,elevation=0)
     sunrise = []
@@ -80,10 +83,11 @@ def add_nighttime(ax,sunrise,sunset,stime,etime):
     return ax
 
 def generate_plot():
-    df, df_hourly, df_rolling = get_shore_station_data()
-    if df is not None:
+    df_backbay, df_hourly_backbay, df_rolling_backbay = get_shore_station_data(back_bay=True)
+    df_forebay, df_hourly_forebay, df_rolling_forebay = get_shore_station_data(back_bay=False)
+    if df_backbay is not None:
         wind_df = get_wind_data()
-        sunset, sunrise = get_sunset_sunrise(df)
+        sunset, sunrise = get_sunset_sunrise(days=7)
         # stime = df.index.max() + dt.timedelta(hours=1)
         stime = dt.date.today()
         etime = stime - dt.timedelta(days=7)
@@ -91,8 +95,11 @@ def generate_plot():
         fig.set_size_inches(10,10)
 
         ax_temp = add_nighttime(ax_temp,sunrise,sunset,stime,etime)
-        ax_temp.scatter(df_hourly.index,df_hourly['swtemp'],s=5,c='#4876B1')
-        ax_temp.plot(df_rolling.index,df_rolling['swtemp'],color='#4876B1',label='Bay')
+        ax_temp.scatter(df_hourly_backbay.index,df_hourly_backbay['swtemp'], s=5, c='#4876B1')
+        ax_temp.plot(df_rolling_backbay.index,df_rolling_backbay['swtemp'], color='#4876B1', label='BS1')
+        
+        ax_temp.scatter(df_hourly_forebay.index,df_hourly_forebay['swtemp'], s=5, c='#1B1725')
+        ax_temp.plot(df_rolling_forebay.index,df_rolling_forebay['swtemp'], color='#1B1725', label='T-Pier')
         if wind_df is not None:
             ekman = process_wind(wind_df)
             ax_temp.plot(wind_df.index, wind_df['wtemp_offshore'],color='#B14E48',lw=2,label='Offshore')
@@ -106,17 +113,23 @@ def generate_plot():
         ax_temp.set_ylabel('Seawater\nTemperature [C]',rotation=0,labelpad=0,size=20,color='#4876B1',fontweight='bold', horizontalalignment='left')
         ax_temp.tick_params(axis='y', labelsize=14)
         # leg = ax_temp.legend(frameon=True,loc='best',fontsize=16)
-        leg = ax_temp.legend(ncol=2,frameon=False, fontsize=16, loc=(.0,-.23),markerscale=3, labelspacing=1)
+        leg = ax_temp.legend(ncol=3,frameon=False, fontsize=16, loc=(.0,-.23),markerscale=3, labelspacing=1)
         for legobj in leg.legendHandles:
             legobj.set_linewidth(3.0)
 
 
         ax_chl = add_nighttime(ax_chl,sunrise,sunset,stime,etime)
-        ax_chl.scatter(df_hourly.index,df_hourly['chlorophyll'],s=5,c='#5C8D42')
-        ax_chl.plot(df_rolling.index,df_rolling['chlorophyll'], color='#5C8D42')
-        if df_rolling['chlorophyll'].max() < 10:
+        ax_chl.scatter(df_hourly_backbay.index, df_hourly_backbay['chlorophyll'],s=5,c='#5C8D42')
+        ax_chl.plot(df_rolling_backbay.index, df_rolling_backbay['chlorophyll'], color='#5C8D42', label='BS1')
+        ax_chl.scatter(df_hourly_forebay.index, df_hourly_forebay['chlorophyll'],s=5,c='k')
+        ax_chl.plot(df_rolling_forebay.index, df_rolling_forebay['chlorophyll'], color='k', label='T-Pier')
+        if df_rolling_backbay['chlorophyll'].max() < 10:
             ax_chl.set_ylim(0,10)
         
+        leg = ax_chl.legend(ncol=3,frameon=False, fontsize=16, loc=(.0,-.23),markerscale=3, labelspacing=1)
+        for legobj in leg.legendHandles:
+            legobj.set_linewidth(3.0)
+
         ax_chl.yaxis.set_label_coords(1.025,.42)
         ax_chl.get_xaxis().set_visible(False)
         ax_chl.set_ylabel('Chlorophyll\n[μg/L]',rotation=0,labelpad=90,size=20,color='#5C8D42',fontweight='bold', horizontalalignment='left')
@@ -125,11 +138,17 @@ def generate_plot():
         
 
         ax_ph = add_nighttime(ax_ph,sunrise,sunset,stime,etime)
-        ax_ph.scatter(df_hourly.index,df_hourly['pH_internal'],s=5,c='#E16F1C',label='Internal')
-        ax_ph.plot(df_rolling.index,df_rolling['pH_internal'], color='#E16F1C')
-        ax_ph.scatter(df_hourly.index,df_hourly['pH_external'],s=5,c='#586994',label='External')
-        ax_ph.plot(df_rolling.index,df_rolling['pH_external'], color='#586994')
-        ax_ph.legend(ncol=2,frameon=False, fontsize=16, loc=(.0,-.25),markerscale=3, labelspacing=1)
+        ax_ph.scatter(df_hourly_backbay.index, df_hourly_backbay['pH_internal'],s=15,marker='x' ,c='#586994',label='BS1 - Internal') #E16F1C
+        ax_ph.plot(df_rolling_backbay.index, df_rolling_backbay['pH_internal'], color='#586994')
+        ax_ph.scatter(df_hourly_backbay.index, df_hourly_backbay['pH_external'],s=15,c='#586994',label='BS1 - External')
+        ax_ph.plot(df_rolling_backbay.index, df_rolling_backbay['pH_external'], color='#586994')
+
+        ax_ph.scatter(df_hourly_forebay.index, df_hourly_forebay['pH_internal'],s=15,marker='x' ,c='#E16F1C',label='BS1 - Internal') #E16F1C
+        ax_ph.plot(df_rolling_forebay.index, df_rolling_forebay['pH_internal'], color='#E16F1C')
+        ax_ph.scatter(df_hourly_forebay.index, df_hourly_forebay['pH_external'],s=15,c='#E16F1C',label='T-Pier - External')
+        ax_ph.plot(df_rolling_forebay.index, df_rolling_forebay['pH_external'], color='#E16F1C')
+
+        ax_ph.legend(ncol=4,frameon=False, fontsize=12, loc=(-.01,-.25),markerscale=2, handletextpad=-0.1)
         
         # ax_ph.set_ylim(7.5,8.3)
         ax_ph.get_xaxis().set_visible(False)

@@ -173,7 +173,7 @@ def generate_plot():
         ax_wind.xaxis.set_major_formatter(date_fmt)
         ax_wind.xaxis.set_minor_locator(mdates.HourLocator(12,tz=tz.gettz('US/Pacific')))
         ax_wind.tick_params(axis='both', labelsize=14)
-        ax_wind.set_ylim(-2,2)
+        ax_wind.set_ylim(-1,1)
         ax_wind.set_xlim(etime,stime)
         ax_wind.text(0,-.3,'Updated on: {}'.format(dt.datetime.now()),transform=ax_wind.transAxes)
 

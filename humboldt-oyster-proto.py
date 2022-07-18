@@ -13,7 +13,7 @@ import logging
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
 
-logging.basicConfig(filename='/home/pdaniel/oyster-dashboard/oyster.log', level=logging.ERROR)
+logging.basicConfig(filename='./oyster.log', level=logging.ERROR)
 
 
 def get_shore_station_data():
@@ -155,8 +155,16 @@ def generate_plot():
         fig.set_size_inches(10,10)
         for axis in ax:
             axis.text(.5,.5,"Data Unavailable - {}".format(dt.datetime.now()),transform=axis.transAxes)
-    plt.savefig('humboldt_bay_conditions.png',dpi=150,bbox_inches='tight', pad_inches=0.1,)
+    try:
+        plt.savefig('humboldt_bay_conditions.png',dpi=150,bbox_inches='tight', pad_inches=0.1,)
 
+    except:
+        fig, ax = plt.subplots(4,sharex=True,gridspec_kw=dict(hspace=0.3))
+        fig.set_size_inches(10,10)
+        for axis in ax:
+            axis.text(.5,.5,"Data Unavailable - {}".format(dt.datetime.now()),transform=axis.transAxes)
+        
+        plt.savefig('humboldt_bay_conditions.png',dpi=150,bbox_inches='tight', pad_inches=0.1,)
 
 def copy_file_to_webserver(FILE):
     """Copy images from to webserver where they can be viewed publically."""

@@ -109,10 +109,9 @@ def generate_plot():
         ax_temp.yaxis.set_label_position("right")
         ax_temp.yaxis.set_label_coords(1.025,.6)
 
-        # ax_temp.set_yticks([10,11,12])
+
         ax_temp.set_ylabel('Seawater\nTemperature [C]',rotation=0,labelpad=0,size=20,color='#4876B1',fontweight='bold', horizontalalignment='left')
         ax_temp.tick_params(axis='y', labelsize=14)
-        # leg = ax_temp.legend(frameon=True,loc='best',fontsize=16)
         leg = ax_temp.legend(ncol=3,frameon=False, fontsize=16, loc=(.0,-.23),markerscale=3, labelspacing=1)
         for legobj in leg.legendHandles:
             legobj.set_linewidth(3.0)
@@ -165,7 +164,7 @@ def generate_plot():
         else:
             ax_wind.text(.3,.65,'Data Unavailable',color='k',size=18,transform=ax_wind.transAxes)
         ax_wind.hlines(0,stime,etime,color='k',zorder=1)
-        ax_wind.set_ylabel('Upwelling Index',rotation=0,labelpad=90,size=20,color='#482C3D',fontweight='bold')
+        ax_wind.set_ylabel('Ekman Transport\n[m^2 per S]',rotation=0,labelpad=90,size=20,color='#482C3D',fontweight='bold')
         ax_wind.yaxis.set_label_coords(1.2,.42)
 
         date_fmt = mdates.DateFormatter('%b %d')

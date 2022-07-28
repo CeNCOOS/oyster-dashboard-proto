@@ -1,3 +1,4 @@
+from unittest import skip
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -85,102 +86,123 @@ def add_nighttime(ax,sunrise,sunset,stime,etime):
 def generate_plot():
     df_backbay, df_hourly_backbay, df_rolling_backbay = get_shore_station_data(back_bay=True)
     df_forebay, df_hourly_forebay, df_rolling_forebay = get_shore_station_data(back_bay=False)
-    if df_backbay is not None:
-        wind_df = get_wind_data()
-        sunset, sunrise = get_sunset_sunrise(days=7)
-        # stime = df.index.max() + dt.timedelta(hours=1)
-        stime = dt.date.today()
-        etime = stime - dt.timedelta(days=7)
-        fig, (ax_temp,ax_chl,ax_ph,ax_wind) = plt.subplots(4,sharex=True,gridspec_kw=dict(hspace=0.4))
-        fig.set_size_inches(10,10)
+    skip_front = False
+    skip_back = False
+    
+    wind_df = get_wind_data()
+    sunset, sunrise = get_sunset_sunrise(days=7)
+    # stime = df.index.max() + dt.timedelta(hours=1)
+    stime = dt.date.today()
+    etime = stime - dt.timedelta(days=7)
+    fig, (ax_temp,ax_chl,ax_ph,ax_wind) = plt.subplots(4,sharex=True,gridspec_kw=dict(hspace=0.4))
+    fig.set_size_inches(10,10)
 
-        ax_temp = add_nighttime(ax_temp,sunrise,sunset,stime,etime)
+    ax_temp = add_nighttime(ax_temp,sunrise,sunset,stime,etime)
+    try:
         ax_temp.scatter(df_hourly_backbay.index,df_hourly_backbay['swtemp'], s=5, c='#4876B1')
         ax_temp.plot(df_rolling_backbay.index,df_rolling_backbay['swtemp'], color='#4876B1', label='BS1')
-        
+    
+    except:
+        skip_back = True
+        ax_temp.text(.5,.5,"BS1 Data Unavailable - {}".format(dt.datetime.now()),transform=ax_temp.transAxes)
+    
+    try:
         ax_temp.scatter(df_hourly_forebay.index,df_hourly_forebay['swtemp'], s=5, c='#1B1725')
         ax_temp.plot(df_rolling_forebay.index,df_rolling_forebay['swtemp'], color='#1B1725', label='T-Pier')
-        if wind_df is not None:
-            ekman = process_wind(wind_df)
-            ax_temp.plot(wind_df.index, wind_df['wtemp_offshore'],color='#B14E48',lw=2,label='Offshore')
+    except:
+        skip_front = True
+        ax_temp.text(.5,.5,"T-Pier Data Unavailable - {}".format(dt.datetime.now()),transform=ax_temp.transAxes)  
 
-        ax_temp.get_xaxis().set_visible(False)
-        sns.despine(ax=ax_temp,bottom=True,trim=False);
-        ax_temp.yaxis.set_label_position("right")
-        ax_temp.yaxis.set_label_coords(1.025,.6)
+    if wind_df is not None:
+        ekman = process_wind(wind_df)
+        ax_temp.plot(wind_df.index, wind_df['wtemp_offshore'],color='#B14E48',lw=2,label='Offshore')
 
-
-        ax_temp.set_ylabel('Seawater\nTemperature [C]',rotation=0,labelpad=0,size=20,color='#4876B1',fontweight='bold', horizontalalignment='left')
-        ax_temp.tick_params(axis='y', labelsize=14)
-        leg = ax_temp.legend(ncol=3,frameon=False, fontsize=16, loc=(.0,-.23),markerscale=3, labelspacing=1)
-        for legobj in leg.legendHandles:
-            legobj.set_linewidth(3.0)
+    ax_temp.get_xaxis().set_visible(False)
+    sns.despine(ax=ax_temp,bottom=True,trim=False);
+    ax_temp.yaxis.set_label_position("right")
+    ax_temp.yaxis.set_label_coords(1.025,.6)
 
 
-        ax_chl = add_nighttime(ax_chl,sunrise,sunset,stime,etime)
+    ax_temp.set_ylabel('Seawater\nTemperature [C]',rotation=0,labelpad=0,size=20,color='#4876B1',fontweight='bold', horizontalalignment='left')
+    ax_temp.tick_params(axis='y', labelsize=14)
+    leg = ax_temp.legend(ncol=3,frameon=False, fontsize=16, loc=(.0,-.23),markerscale=3, labelspacing=1)
+    for legobj in leg.legendHandles:
+        legobj.set_linewidth(3.0)
+
+
+    ax_chl = add_nighttime(ax_chl,sunrise,sunset,stime,etime)
+    if not skip_back:
         ax_chl.scatter(df_hourly_backbay.index, df_hourly_backbay['chlorophyll'],s=5,c='#5C8D42')
         ax_chl.plot(df_rolling_backbay.index, df_rolling_backbay['chlorophyll'], color='#5C8D42', label='BS1')
-        ax_chl.scatter(df_hourly_forebay.index, df_hourly_forebay['chlorophyll'],s=5,c='k')
-        ax_chl.plot(df_rolling_forebay.index, df_rolling_forebay['chlorophyll'], color='k', label='T-Pier')
         if df_rolling_backbay['chlorophyll'].max() < 10:
             ax_chl.set_ylim(0,10)
-        
-        leg = ax_chl.legend(ncol=3,frameon=False, fontsize=16, loc=(.0,-.23),markerscale=3, labelspacing=1)
-        for legobj in leg.legendHandles:
-            legobj.set_linewidth(3.0)
+    else:
+        ax_chl.text(.5,.5,"BS1 Data Unavailable - {}".format(dt.datetime.now()),transform=ax_chl.transAxes)
 
-        ax_chl.yaxis.set_label_coords(1.025,.42)
-        ax_chl.get_xaxis().set_visible(False)
-        ax_chl.set_ylabel('Chlorophyll\n[μg/L]',rotation=0,labelpad=90,size=20,color='#5C8D42',fontweight='bold', horizontalalignment='left')
-        sns.despine(ax=ax_chl,offset=0,bottom=True,trim=False);
-        ax_chl.tick_params(axis='y', labelsize=14 )
-        
 
-        ax_ph = add_nighttime(ax_ph,sunrise,sunset,stime,etime)
+    if not skip_front:
+        ax_chl.scatter(df_hourly_forebay.index, df_hourly_forebay['chlorophyll'],s=5,c='k')
+        ax_chl.plot(df_rolling_forebay.index, df_rolling_forebay['chlorophyll'], color='k', label='T-Pier')
+    else:
+        ax_chl.text(.5,.5,"T-Pier Data Unavailable - {}".format(dt.datetime.now()),transform=ax_chl.transAxes)
+
+    leg = ax_chl.legend(ncol=3,frameon=False, fontsize=16, loc=(.0,-.23),markerscale=3, labelspacing=1)
+    for legobj in leg.legendHandles:
+        legobj.set_linewidth(3.0)
+
+    ax_chl.yaxis.set_label_coords(1.025,.42)
+    ax_chl.get_xaxis().set_visible(False)
+    ax_chl.set_ylabel('Chlorophyll\n[μg/L]',rotation=0,labelpad=90,size=20,color='#5C8D42',fontweight='bold', horizontalalignment='left')
+    sns.despine(ax=ax_chl,offset=0,bottom=True,trim=False);
+    ax_chl.tick_params(axis='y', labelsize=14 )
+    
+
+    ax_ph = add_nighttime(ax_ph,sunrise,sunset,stime,etime)
+    if not skip_back:
         ax_ph.scatter(df_hourly_backbay.index, df_hourly_backbay['pH_internal'],s=15,marker='x' ,c='#586994',label='BS1 - Internal') #E16F1C
         ax_ph.plot(df_rolling_backbay.index, df_rolling_backbay['pH_internal'], color='#586994')
         ax_ph.scatter(df_hourly_backbay.index, df_hourly_backbay['pH_external'],s=15,c='#586994',label='BS1 - External')
         ax_ph.plot(df_rolling_backbay.index, df_rolling_backbay['pH_external'], color='#586994')
-
+    else:
+        ax_ph.text(.5,.5,"BS1 Data Unavailable - {}".format(dt.datetime.now()),transform=ax_ph.transAxes)
+    
+    if not skip_front:
         ax_ph.scatter(df_hourly_forebay.index, df_hourly_forebay['pH_internal'],s=15,marker='x' ,c='#E16F1C',label='BS1 - Internal') #E16F1C
         ax_ph.plot(df_rolling_forebay.index, df_rolling_forebay['pH_internal'], color='#E16F1C')
         ax_ph.scatter(df_hourly_forebay.index, df_hourly_forebay['pH_external'],s=15,c='#E16F1C',label='T-Pier - External')
         ax_ph.plot(df_rolling_forebay.index, df_rolling_forebay['pH_external'], color='#E16F1C')
-
-        ax_ph.legend(ncol=4,frameon=False, fontsize=12, loc=(-.01,-.25),markerscale=2, handletextpad=-0.1)
-        
-        # ax_ph.set_ylim(7.5,8.3)
-        ax_ph.get_xaxis().set_visible(False)
-        ax_ph.set_ylabel('pH\n[total scale]',rotation=0,labelpad=90,size=20,color='#E16F1C',fontweight='bold',horizontalalignment='left')
-        sns.despine(ax=ax_ph,offset=0,bottom=True,trim=True)
-        ax_ph.tick_params(axis='y', labelsize=14)
-        ax_ph.yaxis.set_label_coords(1.025,.42)
-
-        ax_wind = add_nighttime(ax_wind,sunrise,sunset,stime,etime)
-        if wind_df is not None:
-            ax_wind.plot(ekman.index,ekman,color='#482C3D',lw=4)
-            ax_wind.plot(ekman.index,ekman,color='k',lw=1)
-            ax_wind.fill_between(ekman.index,ekman,0,color='#482C3D',alpha=.5)
-        else:
-            ax_wind.text(.3,.65,'Data Unavailable',color='k',size=18,transform=ax_wind.transAxes)
-        ax_wind.hlines(0,stime,etime,color='k',zorder=1)
-        ax_wind.set_ylabel('Ekman Transport\n[m^2 per S]',rotation=0,labelpad=90,size=20,color='#482C3D',fontweight='bold')
-        ax_wind.yaxis.set_label_coords(1.2,.42)
-
-        date_fmt = mdates.DateFormatter('%b %d')
-        sns.despine(ax=ax_wind,offset=0,trim=False);
-        ax_wind.xaxis.set_major_formatter(date_fmt)
-        ax_wind.xaxis.set_minor_locator(mdates.HourLocator(12,tz=tz.gettz('US/Pacific')))
-        ax_wind.tick_params(axis='both', labelsize=14)
-        ax_wind.set_ylim(-1,1)
-        ax_wind.set_xlim(etime,stime)
-        ax_wind.text(0,-.3,'Updated on: {}'.format(dt.datetime.now()),transform=ax_wind.transAxes)
-
     else:
-        fig, ax = plt.subplots(4,sharex=True,gridspec_kw=dict(hspace=0.3))
-        fig.set_size_inches(10,10)
-        for axis in ax:
-            axis.text(.5,.5,"Data Unavailable - {}".format(dt.datetime.now()),transform=axis.transAxes)
+        ax_ph.text(.5,.5,"T-Pier Data Unavailable - {}".format(dt.datetime.now()),transform=ax_ph.transAxes)
+
+    ax_ph.legend(ncol=4,frameon=False, fontsize=12, loc=(-.01,-.25),markerscale=2, handletextpad=-0.1)
+    
+    # ax_ph.set_ylim(7.5,8.3)
+    ax_ph.get_xaxis().set_visible(False)
+    ax_ph.set_ylabel('pH\n[total scale]',rotation=0,labelpad=90,size=20,color='#E16F1C',fontweight='bold',horizontalalignment='left')
+    sns.despine(ax=ax_ph,offset=0,bottom=True,trim=True)
+    ax_ph.tick_params(axis='y', labelsize=14)
+    ax_ph.yaxis.set_label_coords(1.025,.42)
+
+    ax_wind = add_nighttime(ax_wind,sunrise,sunset,stime,etime)
+    if wind_df is not None:
+        ax_wind.plot(ekman.index,ekman,color='#482C3D',lw=4)
+        ax_wind.plot(ekman.index,ekman,color='k',lw=1)
+        ax_wind.fill_between(ekman.index,ekman,0,color='#482C3D',alpha=.5)
+    else:
+        ax_wind.text(.3,.65,'Data Unavailable',color='k',size=18,transform=ax_wind.transAxes)
+    ax_wind.hlines(0,stime,etime,color='k',zorder=1)
+    ax_wind.set_ylabel('Ekman Transport\n[m^2 per S]',rotation=0,labelpad=90,size=20,color='#482C3D',fontweight='bold')
+    ax_wind.yaxis.set_label_coords(1.2,.42)
+
+    date_fmt = mdates.DateFormatter('%b %d')
+    sns.despine(ax=ax_wind,offset=0,trim=False);
+    ax_wind.xaxis.set_major_formatter(date_fmt)
+    ax_wind.xaxis.set_minor_locator(mdates.HourLocator(12,tz=tz.gettz('US/Pacific')))
+    ax_wind.tick_params(axis='both', labelsize=14)
+    ax_wind.set_ylim(-1,1)
+    ax_wind.set_xlim(etime,stime)
+    ax_wind.text(0,-.3,'Updated on: {}'.format(dt.datetime.now()),transform=ax_wind.transAxes)
+
     plt.savefig('morro_bay_conditions.png',dpi=150,bbox_inches='tight', pad_inches=0.1,)
 
 

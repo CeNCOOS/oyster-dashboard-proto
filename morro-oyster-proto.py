@@ -104,14 +104,14 @@ def generate_plot():
     
     except:
         skip_back = True
-        ax_temp.text(.5,.5,"BS1 Data Unavailable - {}".format(dt.datetime.now()),transform=ax_temp.transAxes)
+        ax_temp.text(.5,1.05,"BS1 Data Unavailable - {}".format(dt.datetime.now()),transform=ax_temp.transAxes)
     
     try:
         ax_temp.scatter(df_hourly_forebay.index,df_hourly_forebay['swtemp'], s=5, c='#1B1725')
         ax_temp.plot(df_rolling_forebay.index,df_rolling_forebay['swtemp'], color='#1B1725', label='T-Pier')
     except:
         skip_front = True
-        ax_temp.text(.5,.5,"T-Pier Data Unavailable - {}".format(dt.datetime.now()),transform=ax_temp.transAxes)  
+        ax_temp.text(.5,1.05,"T-Pier Data Unavailable - {}".format(dt.datetime.now()),transform=ax_temp.transAxes)  
 
     if wind_df is not None:
         ekman = process_wind(wind_df)
@@ -137,14 +137,14 @@ def generate_plot():
         if df_rolling_backbay['chlorophyll'].max() < 10:
             ax_chl.set_ylim(0,10)
     else:
-        ax_chl.text(.5,.5,"BS1 Data Unavailable - {}".format(dt.datetime.now()),transform=ax_chl.transAxes)
+        ax_chl.text(.5,1.05,"BS1 Data Unavailable - {}".format(dt.datetime.now()),transform=ax_chl.transAxes)
 
 
     if not skip_front:
         ax_chl.scatter(df_hourly_forebay.index, df_hourly_forebay['chlorophyll'],s=5,c='k')
         ax_chl.plot(df_rolling_forebay.index, df_rolling_forebay['chlorophyll'], color='k', label='T-Pier')
     else:
-        ax_chl.text(.5,.5,"T-Pier Data Unavailable - {}".format(dt.datetime.now()),transform=ax_chl.transAxes)
+        ax_chl.text(.5,1.05,"T-Pier Data Unavailable - {}".format(dt.datetime.now()),transform=ax_chl.transAxes)
 
     leg = ax_chl.legend(ncol=3,frameon=False, fontsize=16, loc=(.0,-.23),markerscale=3, labelspacing=1)
     for legobj in leg.legendHandles:
@@ -164,7 +164,7 @@ def generate_plot():
         ax_ph.scatter(df_hourly_backbay.index, df_hourly_backbay['pH_external'],s=15,c='#586994',label='BS1 - External')
         ax_ph.plot(df_rolling_backbay.index, df_rolling_backbay['pH_external'], color='#586994')
     else:
-        ax_ph.text(.5,.5,"BS1 Data Unavailable - {}".format(dt.datetime.now()),transform=ax_ph.transAxes)
+        ax_ph.text(.5,1.05,"BS1 Data Unavailable - {}".format(dt.datetime.now()),transform=ax_ph.transAxes)
     
     if not skip_front:
         ax_ph.scatter(df_hourly_forebay.index, df_hourly_forebay['pH_internal'],s=15,marker='x' ,c='#E16F1C',label='BS1 - Internal') #E16F1C
@@ -172,7 +172,7 @@ def generate_plot():
         ax_ph.scatter(df_hourly_forebay.index, df_hourly_forebay['pH_external'],s=15,c='#E16F1C',label='T-Pier - External')
         ax_ph.plot(df_rolling_forebay.index, df_rolling_forebay['pH_external'], color='#E16F1C')
     else:
-        ax_ph.text(.5,.5,"T-Pier Data Unavailable - {}".format(dt.datetime.now()),transform=ax_ph.transAxes)
+        ax_ph.text(.5,1.05,"T-Pier Data Unavailable - {}".format(dt.datetime.now()),transform=ax_ph.transAxes)
 
     ax_ph.legend(ncol=4,frameon=False, fontsize=12, loc=(-.01,-.25),markerscale=2, handletextpad=-0.1)
     

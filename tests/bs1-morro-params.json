@@ -1,0 +1,43 @@
+{
+	"erddap-id": "morro-bay-bs1",
+	"past_days": 7,
+	"data_variables": [{
+			"var-id": "mass_concentration_of_chlorophyll_in_sea_water",
+			"short_name":"chlorophyll-a",
+			"units":"μg per L"
+		},
+		{
+			"var-id": "mass_concentration_of_oxygen_in_sea_water",
+			"short_name":"Dissolved Oxygen",
+			"units":"μmol per L"
+		},
+		{
+			"var-id": "fractional_saturation_of_oxygen_in_sea_water",
+			"short_name":"Oxygen Saturation",
+			"units":"%"
+		},
+		{
+			"var-id": "sea_water_practical_salinity",
+			"short_name":"Salinity",
+			"units":"PSU"
+		},
+		{
+			"var-id": "sea_water_temperature",
+			"short_name":"Temperature",
+			"units":"Degrees C",
+			"running_mean": "True"
+		},
+		{
+			"var-id": "sea_water_turbidity",
+			"short_name":"Turbidity",
+			"units":"NTU"
+		},
+		{
+			"var-id": "sea_water_ph_reported_on_total_scale_internal",
+			"short_name":"pH",
+			"units":"total"
+		}
+	],
+	"web-url-fname": "morro_bay_conditions.png"
+
+}

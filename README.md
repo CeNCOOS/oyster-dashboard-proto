@@ -8,6 +8,13 @@ The architecture has been updated to allow for scaling to other sites.
 
 Use the parameter JSON files to pass along information for processing. See example in ./tests/ directory
 
+
+Generate requirements.txt with:  
+`python -m  pipreqs.pipreqs --encoding utf-8  /path/to/project`
+
+To install from requirements.txt:  
+`pip install -r requirements.txt`
+
 ___
 
 

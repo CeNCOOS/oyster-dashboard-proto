@@ -95,7 +95,7 @@ class StationData:
 
     def get_sunset_sunrise(self):
         """Using the `astral` api package we can request sunrise and sunset times for humboldt to use for shading the plots."""
-        days = int(self.params['past_days'])
+        days = int(self.params['past_days']) + 1
         stime = dt.date.today() + dt.timedelta(days=1)
 
         obs = Observer(latitude=35.339658, longitude=-120.850287,elevation=0)
@@ -143,7 +143,7 @@ class StationData:
         for i, sname in enumerate(self.short_names):
 
             ax[i].scatter(self.df.index, self.df[sname],s=5, c=colors[i])
-            plotting.add_nighttime(ax=ax[i],sunrise=self.sunrise, sunset=self.sunset, stime=stime + dt.timedelta(hours=14), etime=etime)
+            plotting.add_nighttime(ax=ax[i],sunrise=self.sunrise, sunset=self.sunset, stime=stime + dt.timedelta(hours=14), etime=etime - dt.timedelta(hours=14))
 
             if sname in self.rolling:
                 ax[i].plot(self.df.index, self.df[sname+"_rolling"], color=colors[i])

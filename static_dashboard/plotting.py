@@ -57,7 +57,6 @@ def format_axes(ax, short_name, unit, label_color, not_last=True, comments=None)
     return ax
 
 
-
 def add_nighttime(ax, sunrise, sunset, stime, etime):
     ax.axvspan(stime, etime, color='.85',zorder=-5)
     for sr,ss in zip(sunrise,sunset):

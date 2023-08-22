@@ -3,7 +3,7 @@ import json
 import urllib.error
 from astral import sun, Observer
 import datetime as dt
-import plotting
+from . import plotting
 import os
 
 

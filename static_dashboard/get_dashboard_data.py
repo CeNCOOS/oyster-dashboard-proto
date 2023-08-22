@@ -3,13 +3,9 @@ import json
 import urllib.error
 from astral import sun, Observer
 import datetime as dt
-<<<<<<< HEAD
-from . import plotting
-=======
 import plotting
 import os
 
->>>>>>> 5978caf34b60223969167d1dd2f9f36fdfd3638c
 
 class StationData:
 
@@ -167,9 +163,6 @@ class StationData:
             ax[i].set_xlim(etime, stime + dt.timedelta(hours=8))
             plotting.format_axes(ax=ax[i], short_name=sname, unit=self.units[i], label_color=colors[i], not_last=not_last, comments=comments)
 
-<<<<<<< HEAD
-    
-=======
     def write_JSON(self, out_dir):
         df_drop_na = self.df
         time = df_drop_na.index.values
@@ -226,16 +219,11 @@ class StationData:
         with open(os.path.join(out_dir,self.params['erddap-id']+".json"), "w") as outfile:
             outfile.write(json_object)
         
->>>>>>> 5978caf34b60223969167d1dd2f9f36fdfd3638c
 
 
 if __name__ == "__main__":
     fname = "/Users/patrick/Documents/CeNCOOS/oyster-dashboard-proto/tests/bs1-morro-params.json"
     stationData = StationData(fname)
-<<<<<<< HEAD
-    stationData.make_plot()
-    plotting.save_fig(stationData.params['web-url-fname'], directory="/Users/patrick/Documents/CeNCOOS/oyster-dashboard-proto/figures/",transfer=False)
-=======
     print(stationData.df.head())
     print(stationData.write_JSON("/Users/patrick/Documents/CeNCOOS/oyster-dashboard-proto/dynamic_dashboard/"))
     # stationData.make_plot()
@@ -245,4 +233,3 @@ if __name__ == "__main__":
 
 
 
->>>>>>> 5978caf34b60223969167d1dd2f9f36fdfd3638c

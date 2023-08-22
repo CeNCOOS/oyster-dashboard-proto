@@ -1,0 +1,38 @@
+{
+	"erddap-id": "edu_calpoly_marine_morro",
+	"station-name": "BM Station - Morro Bay",
+	"data-provider": "Cal Poly SLO",
+	"past_days": 7,
+	"data_variables": [
+		{
+			"var-id": "sea_water_temperature",
+			"short_name":"Temperature",
+			"units":"°C",
+			"running_mean": "True",
+			"ylims":[12,22]
+			
+		},
+		{
+			"var-id": "mass_concentration_of_chlorophyll_in_sea_water",
+			"short_name":"Chlorophyll-a",
+			"units":"μg/L",
+			"ylims":[0,10],
+			"running_mean": "True"
+		},
+		{
+			"var-id": "mass_concentration_of_oxygen_in_sea_water",
+			"short_name":"Dissolved Oxygen",
+			"units":"μmol/L",
+			"running_mean": "True",
+			"ylims":[0,400]
+		},
+		{
+			"var-id": "sea_water_ph_reported_on_total_scale_internal",
+			"short_name":"pH",
+			"units":"total",
+			"running_mean": "True"
+		}
+	],
+	"web-url-fname": "morro_bay_conditions.png",
+	"comments":"We acknowledge support from the Morro Bay National Estuary Program and EPA"
+}

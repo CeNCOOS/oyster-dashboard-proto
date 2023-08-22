@@ -77,10 +77,10 @@ def save_fig(fname, directory=".", transfer=False):
         copy_file_to_webserver(out_name)
 
 
-def copy_file_to_webserver(FILE):
+def copy_file_to_webserver(FILE, server_dest="data/oyster-dash-proto/"):
     """Copy images from to webserver where they can be viewed publically."""
     try:
-        os.system('scp -i /etc/ssh/keys/pdaniel/scp_rsa {} skyrocket8.mbari.org:/var/www/html/data/oyster-dash-proto/ '.format(FILE))
+        os.system('scp -i /etc/ssh/keys/pdaniel/scp_rsa {} skyrocket8.mbari.org:/var/www/html/{}'.format(FILE, server_dest))
     
     except Exception as e:
         print(e)

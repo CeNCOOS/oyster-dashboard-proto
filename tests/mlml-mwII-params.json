@@ -1,0 +1,46 @@
+{
+	"erddap-id": "mlml_monterey",
+	"station-name": "Monterey Wharf II",
+	"data-provider": "Moss Landing Marine Labs",
+	"past_days": 7,
+	"data_variables": [
+		{
+			"var-id": "sea_water_temperature",
+			"short_name":"Temperature",
+			"units":"Degrees C",
+			"running_mean": "True",
+			"ylims":[12,22]
+			
+		},
+		{
+            "var-id": "sea_water_practical_salinity",
+			"short_name":"Salinity",
+			"units":"PSU",
+			"running_mean": "True",
+			"ylims":[10,35]
+
+        },
+		{
+			"var-id": "mass_concentration_of_chlorophyll_in_sea_water",
+			"short_name":"Chlorophyll-a",
+			"units":"μg per L",
+			"ylims":[0,10],
+			"running_mean": "True"
+		},
+		{
+			"var-id": "mass_concentration_of_oxygen_in_sea_water",
+			"short_name":"Dissolved Oxygen",
+			"units":"μmol per L",
+			"running_mean": "True",
+			"ylims":[0,400]
+		},
+		{
+			"var-id": "sea_water_ph_reported_on_total_scale",
+			"short_name":"pH",
+			"units":"total",
+			"running_mean": "True"
+		}
+	],
+	"web-url-fname": "mw2_conditions.png",
+	"comments":"Data provided by Moss Landing Marine Labs."
+}

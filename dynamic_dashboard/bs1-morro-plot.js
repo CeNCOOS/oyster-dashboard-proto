@@ -43,7 +43,7 @@ function get_latest_value(array) {
 };
 
 
-fetch("./demo_data.json")
+fetch("/data/oyster-dash-proto/dynamic_dashboard/demo_data.json")
     .then(response => {
         return response.json();
     })

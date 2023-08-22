@@ -4,9 +4,9 @@ import unittest
 class TestLoadMethods(unittest.TestCase):
 
     def test_load_parameters(self):
-        station_data = StationData("./tests/bs1-morro-params.json")
+        station_data = StationData("./tests/mlml-mwII-params.json")
         msg = "Unable to load station parameter data"
-        self.assertEqual (station_data.params['erddap-id'], "morro-bay-bs1", msg=msg)
+        self.assertEqual (station_data.params['erddap-id'], "mlml_monterey", msg=msg)
 
     def test_url_builder(self):
         station_data = StationData("./tests/bm-morro-params.json")

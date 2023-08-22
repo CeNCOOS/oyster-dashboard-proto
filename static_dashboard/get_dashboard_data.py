@@ -166,6 +166,11 @@ class StationData:
 
 
     def write_JSON(self, out_dir, copy_to_web=False):
+        """ Generate a JSON file from the data to be used for the dynamic plotting on the website
+        Args:
+            out_dir (str): the path to save the json file in locally. Filenames are based on the erddap-id specified in the parameter file.
+            copy_to_web (bool, optional): Defaults to False. True will copy the file to the spyglass webserver to the hardcoded directory.
+        """
         df_drop_na = self.df
         time = df_drop_na.index.values
         unix_time = [int((pd.to_datetime(t) - dt.datetime(1970, 1, 1)).total_seconds()) for t in time]

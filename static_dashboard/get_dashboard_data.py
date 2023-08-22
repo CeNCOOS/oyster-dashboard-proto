@@ -4,6 +4,8 @@ import urllib.error
 from astral import sun, Observer
 import datetime as dt
 import plotting
+import os
+
 
 class StationData:
 
@@ -161,14 +163,71 @@ class StationData:
             ax[i].set_xlim(etime, stime + dt.timedelta(hours=8))
             plotting.format_axes(ax=ax[i], short_name=sname, unit=self.units[i], label_color=colors[i], not_last=not_last, comments=comments)
 
-
+    def write_JSON(self, out_dir):
+        df_drop_na = self.df
+        time = df_drop_na.index.values
+        unix_time = [int((pd.to_datetime(t) - dt.datetime(1970, 1, 1)).total_seconds()) for t in time]
+        df_drop_na['Temperature'] = df_drop_na['Temperature'].round(1)
+        df_drop_na['Chlorophyll-a'] = df_drop_na['Chlorophyll-a'].round(2)
+        df_drop_na['Dissolved Oxygen'] = df_drop_na['Dissolved Oxygen'].round(2)
+        df_drop_na['pH'] = df_drop_na['pH'].round(4)
+        # Replace NaN with NULL
+        df_drop_na = df_drop_na.fillna(value="null")
+        temp = df_drop_na['Temperature']
+        chla = df_drop_na['Chlorophyll-a']
+        do = df_drop_na['Dissolved Oxygen']
+        ph = df_drop_na['pH']
+        
+        
+        dictionary = {
+            "name": self.params['station-name'],
+            "datetime": unix_time,
+            "Temperature": temp.values,
+            "Chlorophyll-a": chla.values,
+            "Dissolved Oxygen": do.values,
+            "pH": ph.values
+        }
+        
+        
+        dictionary = {
+            "name": self.params['station-name'],
+            "datetime": unix_time,
+            "Temperature": {
+                "values":list(temp.values),
+                "units": self.units[0]
+                },
+    
+            "Chlorophyll-a": {
+                    "values":list(chla.values),
+                    "units": self.units[1]  
+            },
+            "Dissolved Oxygen": {
+                    "values":list(do.values),
+                    "units": self.units[2]
+                },
+            "pH": 
+                {
+                    "values":list(ph.values),
+                    "units": self.units[3]
+                }
+        }
+        
+        # Serializing json
+        json_object = json.dumps(dictionary, indent=4)
+        
+        # Writing to sample.json
+        with open(os.path.join(out_dir,self.params['erddap-id']+".json"), "w") as outfile:
+            outfile.write(json_object)
+        
 
 
 if __name__ == "__main__":
-    fname = "/Users/patrick/Documents/CeNCOOS/oyster-dashboard-proto/tests/hsu-params.json"
+    fname = "/Users/patrick/Documents/CeNCOOS/oyster-dashboard-proto/tests/bs1-morro-params.json"
     stationData = StationData(fname)
-    stationData.make_plot()
-    plotting.save_fig(stationData.params['web-url-fname'], directory="/Users/patrick/Documents/CeNCOOS/oyster-dashboard-proto/figures/",transfer=False)
+    print(stationData.df.head())
+    print(stationData.write_JSON("/Users/patrick/Documents/CeNCOOS/oyster-dashboard-proto/dynamic_dashboard/"))
+    # stationData.make_plot()
+    # plotting.save_fig(stationData.params['web-url-fname'], directory="/Users/patrick/Documents/CeNCOOS/oyster-dashboard-proto/figures/",transfer=True)
 
     
 

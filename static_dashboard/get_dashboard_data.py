@@ -205,10 +205,10 @@ class StationData:
 
 
 if __name__ == "__main__":
-    fname = "/home/pdaniel/static-dashboards/parameter_files/bs-SLO-params.json"
+    fname = "../moss-MLML-params.json"
     stationData = StationData(fname)
     print(stationData.df.head())
-    print(stationData.write_JSON("/home/pdaniel/static-dashboards/dynamic_json"))
+    print(stationData.write_JSON("../"))
     # stationData.make_plot()
     # plotting.save_fig(stationData.params['web-url-fname'], directory="/Users/patrick/Documents/CeNCOOS/oyster-dashboard-proto/figures/",transfer=True)
 

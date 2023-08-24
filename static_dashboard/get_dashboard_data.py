@@ -3,8 +3,8 @@ import json
 import urllib.error
 from astral import sun, Observer
 import datetime as dt
-# from . import plotting
-import plotting # only uses if debugging in the __main__
+from . import plotting
+# import plotting # only uses if debugging in the __main__
 import numpy as np
 import os
 

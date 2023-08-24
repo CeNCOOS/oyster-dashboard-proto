@@ -2,7 +2,7 @@
 	"erddap-id": "edu_calpoly_marine_morro",
 	"station-name": "BM Station - Morro Bay",
 	"data-provider": "Cal Poly SLO",
-	"past_days": 7,
+	"past_days": 14,
 	"data_variables": [
 		{
 			"var-id": "sea_water_temperature",

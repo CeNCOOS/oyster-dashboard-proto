@@ -3,8 +3,9 @@ import json
 import urllib.error
 from astral import sun, Observer
 import datetime as dt
-from . import plotting
-# import plotting # only uses if debugging in the __main__
+# from . import plotting
+import plotting # only uses if debugging in the __main__
+import numpy as np
 import os
 
 
@@ -164,6 +165,29 @@ class StationData:
             ax[i].set_xlim(etime, stime + dt.timedelta(hours=8))
             plotting.format_axes(ax=ax[i], short_name=sname, unit=self.units[i], label_color=colors[i], not_last=not_last, comments=comments)
 
+    def fill_data_to_present(self):
+        """Fill data from the last available data point to the current hour. If no data is available, fill with NaN. 
+        This will get made into a 'null' value later.
+        """
+        now = pd.Timestamp.now().round('60min').to_pydatetime() # Round the time to the nearest hour
+        trange = pd.date_range(start=now-dt.timedelta(days=14),end=now, freq='1H') # This will be the range of the data to fill
+        return self.df.tz_localize(None).reindex(trange) # Reindex the dataframe to the new range, its that easy. Dont forget to drop the TZ info
+        
+    def calculate_slope(self, var):
+        
+        try:
+            roll = self.df[var].rolling(window=44,win_type="hann",min_periods=20).mean()
+            x = np.arange(roll[20:].index.size) # = array([0, 1, 2, ..., 3598, 3599, 3600])
+            fit = np.polyfit(x, roll[20:].values, 1)
+            slope, intercept = fit[0], fit[1]
+            slope = slope * 24 * 14 # Convert to per 14
+            print("slope: ",slope)
+            
+        except:
+            slope = np.nan
+        
+        return slope
+
 
     def write_JSON(self, out_dir, copy_to_web=False):
         """ Generate a JSON file from the data to be used for the dynamic plotting on the website
@@ -171,9 +195,10 @@ class StationData:
             out_dir (str): the path to save the json file in locally. Filenames are based on the erddap-id specified in the parameter file.
             copy_to_web (bool, optional): Defaults to False. True will copy the file to the spyglass webserver to the hardcoded directory.
         """
-        df_drop_na = self.df
+        df_drop_na = self.fill_data_to_present()
         time = df_drop_na.index.values
-        unix_time = [int((pd.to_datetime(t) - dt.datetime(1970, 1, 1)).total_seconds()) for t in time]
+        seconds_in_seven_hours = 7 * 60 * 60 # Offset for timezone in seconds
+        unix_time = [int((pd.to_datetime(t) - dt.datetime(1970, 1, 1)).total_seconds()) + seconds_in_seven_hours for t in time]
         
         for var_name in self.short_names:
             df_drop_na[var_name] = df_drop_na[var_name].round(2)    
@@ -189,9 +214,25 @@ class StationData:
         for var_name, var_unit in zip(self.short_names, self.units):
             dictionary[var_name] = {
                 "values" : list(df_drop_na[var_name].values),
-                "units": var_unit
+                "units": self.units[self.short_names.index(var_name)],
+                "slope_scale" : "null",
+                'slope' : round(self.calculate_slope(var_name),3)
             }
-        
+            # Chose scale based on absolute range of slope over 14 days
+            # For temp that might be -5 C to 5 C, so scale is 10.
+            
+            if var_name == "Temperature":
+                dictionary[var_name]['slope_scale'] = 10
+            
+            elif var_name == "Dissolved Oxygen":
+                dictionary[var_name]['slope_scale'] = 10
+            
+            elif var_name == "Chlorophyll-a":
+                dictionary[var_name]['slope_scale'] = 40
+            
+            elif var_name == "pH":
+                dictionary[var_name]['slope_scale'] = 1
+            
         # Serializing json
         json_object = json.dumps(dictionary, indent=4)
         
@@ -205,10 +246,12 @@ class StationData:
 
 
 if __name__ == "__main__":
-    fname = "/home/pdaniel/static-dashboards/parameter_files/bs-SLO-params.json"
+    # fname = "/home/pdaniel/static-dashboards/parameter_files/bs-SLO-params.json"
+    fname = "./dynamic_dashboard/bm-morro-params.json"
     stationData = StationData(fname)
-    print(stationData.df.head())
-    print(stationData.write_JSON("/home/pdaniel/static-dashboards/dynamic_json"))
+    print(stationData.fill_data_to_present().tail())
+    stationData.write_JSON("./dynamic_dashboard/", copy_to_web=False)
+    # print(stationData.write_JSON("/home/pdaniel/static-dashboards/dynamic_json", write_to_web=False))
     # stationData.make_plot()
     # plotting.save_fig(stationData.params['web-url-fname'], directory="/Users/patrick/Documents/CeNCOOS/oyster-dashboard-proto/figures/",transfer=True)
 

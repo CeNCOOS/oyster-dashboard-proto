@@ -22,7 +22,7 @@
 		{
 			"var-id": "mass_concentration_of_oxygen_in_sea_water",
 			"short_name":"Dissolved Oxygen",
-			"units":"μmol/L",
+			"units":"mg/L",
 			"running_mean": "True",
 			"ylims":[0,400]
 		},

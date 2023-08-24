@@ -93,7 +93,7 @@ fetch(json_file)
             let d = [data2['datetime'], data2[plot_vars[i]]['values']];
             opts['series'][1]['label'] = plot_vars[i];
             opts['series'][1]['stroke'] = plot_colors[i];
-            opts['axes'][1]['label'] = plot_vars[i];
+            opts['axes'][1]['label'] = `${plot_vars[i]} [${data2[plot_vars[i]]['units']}]`;
             opts['axes'][1]['stroke'] = plot_colors[i];
             let div_id = plot_vars[i].replace(/\s/g, '-').toLowerCase()
             

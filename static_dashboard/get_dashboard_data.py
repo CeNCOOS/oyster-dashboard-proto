@@ -184,7 +184,7 @@ class StationData:
             print("slope: ",slope)
             
         except:
-            slope = np.nan
+            slope = "null"
         
         return slope
 

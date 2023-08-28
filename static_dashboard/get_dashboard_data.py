@@ -56,7 +56,11 @@ class StationData:
         short_names = []
         units = []
         for vars in self.params['data_variables']:
+            # This is an edge case for just MWII check the CF naming on ERDDAP
+            if vars['short_names'] == "Dissolved Oxygen Saturation":
+                vars['short_names'] = "Oxygen Saturation"
             short_names.append(vars['short_name'])
+            
             units.append(vars['units'])
         return short_names, units
 
@@ -190,9 +194,9 @@ class StationData:
             slope, intercept = fit[0], fit[1]
             slope = slope * 24 * 14 # Convert to per 14
             if np.isnan(slope):
-            	slope = "null"
+                slope = "null"
             else:
-	            slope = round(slope,3)
+                slope = round(slope,3)
 	            
         except:
             slope = "null"

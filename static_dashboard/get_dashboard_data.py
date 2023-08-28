@@ -177,11 +177,18 @@ class StationData:
         
         try:
             roll = self.df[var].rolling(window=44,win_type="hann",min_periods=20).mean()
-            x = np.arange(roll[20:].index.size) # = array([0, 1, 2, ..., 3598, 3599, 3600])
-            fit = np.polyfit(x, roll[20:].values, 1)
+            
+            # Edge case where one nan value was tanking the arrows. NaN came from filling in last value.
+            if np.sum(np.isnan(roll[20:])) == 1 :
+                roll = roll[20:].dropna()
+            
+            else:
+                roll = roll[20:]
+            
+            x = np.arange(roll.index.size) # = array([0, 1, 2, ..., 3598, 3599, 3600])
+            fit = np.polyfit(x, roll.values, 1)
             slope, intercept = fit[0], fit[1]
             slope = slope * 24 * 14 # Convert to per 14
-            
             if np.isnan(slope):
             	slope = "null"
             else:
@@ -234,8 +241,14 @@ class StationData:
             elif var_name == "Chlorophyll-a":
                 dictionary[var_name]['slope_scale'] = 40
             
+            elif var_name == "Oxygen Saturation":
+                dictionary[var_name]['slope_scale'] = 40
+
             elif var_name == "pH":
                 dictionary[var_name]['slope_scale'] = 1
+
+            elif var_name == "Salinity":
+                dictionary[var_name]['slope_scale'] = 3
             
         # Serializing json
         json_object = json.dumps(dictionary, indent=4)

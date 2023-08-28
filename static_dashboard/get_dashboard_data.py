@@ -5,7 +5,7 @@ from astral import sun, Observer
 import datetime as dt
 from . import plotting
 # import plotting # only uses if debugging in the __main__
-import os
+import os 
 
 
 class StationData:

@@ -4,7 +4,7 @@ import seaborn as sns
 from dateutil import tz
 import itertools
 import os
-import datetime as dt
+import datetime as dt 
 
 
 def make_figure(num_axes):
@@ -24,7 +24,7 @@ def add_title(super_string, sub_string):
     Args:
         super_string (str): _description_
         sub_string (str): _description_
-    """
+    """ 
     title = "{}\n{}".format(super_string, sub_string)
     plt.suptitle(title,x=.125,y=.96,horizontalalignment='left',size=20)
 

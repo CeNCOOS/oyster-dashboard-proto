@@ -177,6 +177,7 @@ class StationData:
         
         try:
             roll = self.df[var].rolling(window=44,win_type="hann",min_periods=20).mean()
+<<<<<<< HEAD
             
             # Edge case where one nan value was tanking the arrows. NaN came from filling in last value.
             if np.sum(np.isnan(roll[20:])) == 1 :
@@ -194,6 +195,14 @@ class StationData:
             else:
 	            slope = round(slope,3)
 	            
+=======
+            x = np.arange(roll[20:].index.size) # = array([0, 1, 2, ..., 3598, 3599, 3600])
+            fit = np.polyfit(x, roll[20:].values, 1)
+            slope, intercept = fit[0], fit[1]
+            slope = slope * 24 * 14 # Convert to per 14
+            print("slope: ",slope)
+            
+>>>>>>> e23cd35b5eb49568b388d69b0f210e759d50b790
         except:
             slope = "null"
         
@@ -227,7 +236,11 @@ class StationData:
                 "values" : list(df_drop_na[var_name].values),
                 "units": self.units[self.short_names.index(var_name)],
                 "slope_scale" : "null",
+<<<<<<< HEAD
                 'slope' : self.calculate_slope(var_name)
+=======
+                'slope' : round(self.calculate_slope(var_name),3)
+>>>>>>> e23cd35b5eb49568b388d69b0f210e759d50b790
             }
             # Chose scale based on absolute range of slope over 14 days
             # For temp that might be -5 C to 5 C, so scale is 10.
@@ -241,6 +254,7 @@ class StationData:
             elif var_name == "Chlorophyll-a":
                 dictionary[var_name]['slope_scale'] = 40
             
+<<<<<<< HEAD
             elif var_name == "Oxygen Saturation":
                 dictionary[var_name]['slope_scale'] = 40
 
@@ -249,6 +263,10 @@ class StationData:
 
             elif var_name == "Salinity":
                 dictionary[var_name]['slope_scale'] = 3
+=======
+            elif var_name == "pH":
+                dictionary[var_name]['slope_scale'] = 1
+>>>>>>> e23cd35b5eb49568b388d69b0f210e759d50b790
             
         # Serializing json
         json_object = json.dumps(dictionary, indent=4)

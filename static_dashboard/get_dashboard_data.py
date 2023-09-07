@@ -14,11 +14,12 @@ class StationData:
     def __init__(self, param_fname) -> None:
         self.params = self.load_station_parameters(param_fname)
         self.data_url = self.build_url()
+        self.qc_url = self.build_qc_url()
         self.short_names, self.units = self.get_headers()
+        self.qartod_names = self.get_qartod_headers()
         self.rolling = self.is_rolling()
         self.sunset, self.sunrise = self.get_sunset_sunrise()
         self.df = self.get_data_from_erddap()
-
 
     def load_station_parameters(self, param_fname):
         """ Return parameter dict with all of the info for making requests of data
@@ -35,7 +36,7 @@ class StationData:
 
     def build_url(self):
         """
-        Build the URL for making the erddap request
+        Build the URL for making the erddap request for getting environmental data
         """
         ext = ".csvp"
         BASE_URL = "http://erddap.cencoos.org/erddap/tabledap/" + self.params['erddap-id'] + ext + "?time"
@@ -44,6 +45,18 @@ class StationData:
         for vars in self.params['data_variables']:
             data_vars += "%2C" + vars['var-id']
         return BASE_URL + data_vars + date_range
+
+    def build_qc_url(self):
+        '''
+        Build the URL for making the erddap request for getting QARTOD data
+        '''
+        ext = ".csvp"
+        BASE_URL = "http://erddap.cencoos.org/erddap/tabledap/" + self.params['erddap-id'] + ext + "?time"
+        date_range = "&time>now-" + str(self.params['past_days']) + "days"
+        qc_vars = ""
+        for vars in self.params['qartod_variables']:
+             qc_vars += "%2C" + vars['qartod-var-id'] 
+        return BASE_URL + qc_vars + date_range
 
     def get_headers(self):
         """
@@ -57,12 +70,22 @@ class StationData:
         units = []
         for vars in self.params['data_variables']:
             # This is an edge case for just MWII check the CF naming on ERDDAP
-            if vars['short_names'] == "Dissolved Oxygen Saturation":
-                vars['short_names'] = "Oxygen Saturation"
+            if vars['short_name'] == "Dissolved Oxygen Saturation":
+                vars['short_name'] = "Oxygen Saturation"
             short_names.append(vars['short_name'])
             
             units.append(vars['units'])
         return short_names, units
+
+    def get_qartod_headers(self):
+        """
+        Return list of qartod variable names to fetch from ERDDAP
+        """
+        qartod_names = []
+        for vars in self.params['qartod_variables']:
+            qartod_names.append(vars['qartod-var-id'])
+    
+        return qartod_names
 
     def is_rolling(self):
         """
@@ -85,12 +108,50 @@ class StationData:
             pd.Dataframe: A dataframe with the hourly data from the station.
         """
         headers = ['time'] + self.short_names
+        headers_qc = ['time'] + self.qartod_names
         try:
+            #df = pd.read_csv(self.data_url, names=headers, skiprows=1)
+            #df['dateTime'] = pd.to_datetime(df['time'])
+            #df.index = df['dateTime']
+            #df = df.tz_convert('US/Pacific')
+            #df_hourly = df.resample('1H').mean()
+            #if len(self.rolling) > 0:
+            #    for roll in self.rolling:
+            #        df_hourly[roll + "_rolling"] = df_hourly[roll].rolling(window=6,center=True,win_type='hamming').mean()
+
+            #return df_hourly
+
+            #Testing with QC steps included
             df = pd.read_csv(self.data_url, names=headers, skiprows=1)
             df['dateTime'] = pd.to_datetime(df['time'])
-            df.index = df['dateTime']
-            df = df.tz_convert('US/Pacific')
-            df_hourly = df.resample('1H').mean()
+            df.drop(columns='time', inplace=True)
+
+            #Make separate df for QC variables
+            df_qc =  pd.read_csv(self.qc_url, names=headers_qc, skiprows=1)
+            df_qc['dateTime'] = pd.to_datetime(df_qc['time'])
+            df_qc.drop(columns='time', inplace=True)
+            
+            #Now merge QC and data DFs
+            df_merged = pd.merge(df,df_qc, left_on='dateTime', right_on ='dateTime')
+            df_merged.index = df['dateTime']
+            df_merged.drop(columns='dateTime', inplace=True)
+            df_merged = df_merged.tz_convert('US/Pacific')
+            
+            #Now apply conditional statement to remove bad qartod flags (=4)
+            column_mapping = {}
+            for i in range(len(self.short_names)):
+                column_mapping[self.short_names[i]] = self.qartod_names[i]
+
+            # Iterate through data columns and update QC flag columns
+            for data_col, qc_col in column_mapping.items():
+                df_merged[data_col] = df_merged.apply(lambda row: np.nan if row[qc_col] == 4 else row[data_col], axis=1)
+
+            #Now we no longer need QC flags, can be removed from df_merged
+            df_merged.drop(columns = self.qartod_names, inplace=True)
+
+            # resampling
+            df_hourly = df_merged.resample('1H').mean()
+
             if len(self.rolling) > 0:
                 for roll in self.rolling:
                     df_hourly[roll + "_rolling"] = df_hourly[roll].rolling(window=6,center=True,win_type='hamming').mean()
@@ -177,8 +238,13 @@ class StationData:
         trange = pd.date_range(start=now-dt.timedelta(days=14),end=now, freq='1H') # This will be the range of the data to fill
         return self.df.tz_localize(None).reindex(trange) # Reindex the dataframe to the new range, its that easy. Dont forget to drop the TZ info
         
-    def calculate_slope(self, var):
         
+    def calculate_slope(self, var):
+        """ Calculate slope of a 14-day linear regression. 
+        Data are de-tided by applying a 44  hour hann-window convolution (ie low pass filter).
+        The first window starts on the right side of the timeseries, so the first 20 hours of the filtered data are removed.
+        
+        """
         try:
             roll = self.df[var].rolling(window=44,win_type="hann",min_periods=20).mean()
             
@@ -194,6 +260,7 @@ class StationData:
             slope, intercept = fit[0], fit[1]
             slope = slope * 24 * 14 # Convert to per 14
             if np.isnan(slope):
+                # uPlot uses 'null' to fill empty data.
                 slope = "null"
             else:
                 slope = round(slope,3)

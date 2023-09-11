@@ -3,7 +3,7 @@ import json
 import urllib.error
 from astral import sun, Observer
 import datetime as dt
-from . import plotting
+#from . import plotting
 # import plotting # only uses if debugging in the __main__
 import numpy as np
 import os
@@ -57,8 +57,8 @@ class StationData:
         units = []
         for vars in self.params['data_variables']:
             # This is an edge case for just MWII check the CF naming on ERDDAP
-            if vars['short_names'] == "Dissolved Oxygen Saturation":
-                vars['short_names'] = "Oxygen Saturation"
+            if vars['short_name'] == "Dissolved Oxygen Saturation":
+                vars['short_name'] = "Oxygen Saturation"
             short_names.append(vars['short_name'])
             
             units.append(vars['units'])

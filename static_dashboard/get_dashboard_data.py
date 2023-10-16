@@ -110,16 +110,6 @@ class StationData:
         headers = ['time'] + self.short_names
         headers_qc = ['time'] + self.qartod_names
         try:
-            #df = pd.read_csv(self.data_url, names=headers, skiprows=1)
-            #df['dateTime'] = pd.to_datetime(df['time'])
-            #df.index = df['dateTime']
-            #df = df.tz_convert('US/Pacific')
-            #df_hourly = df.resample('1H').mean()
-            #if len(self.rolling) > 0:
-            #    for roll in self.rolling:
-            #        df_hourly[roll + "_rolling"] = df_hourly[roll].rolling(window=6,center=True,win_type='hamming').mean()
-
-            #return df_hourly
 
             #Testing with QC steps included
             df = pd.read_csv(self.data_url, names=headers, skiprows=1)

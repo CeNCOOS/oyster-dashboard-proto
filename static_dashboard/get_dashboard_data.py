@@ -242,39 +242,47 @@ class StationData:
         The first window starts on the right side of the timeseries, so the first 20 hours of the filtered data are removed.
         """
         
-        #non_null_length = len(self.df['var'][self.df['var'].notnull()])
-        #print("Length of non-null values in 'var':", non_null_length)        
+        non_null_length = len(self.df[var][self.df[var].notnull()])
+        #print(f"Length of non-null values in {var}:", non_null_length) 
+        #print(f"Length of all values in {var}", len(self.df[var]))        
         
-        try:
-            roll = self.df[var].rolling(window=44,win_type="hann",min_periods=20).mean()
-            
-            # Edge case where one nan value was tanking the arrows. NaN came from filling in last value.
-            if np.sum(np.isnan(roll[20:])) == 1 :
-                roll = roll[20:].dropna()
-            
-            else:
-                roll = roll[20:]
-            
-            x = np.arange(roll.index.size) # = array([0, 1, 2, ..., 3598, 3599, 3600])
-            
-            # Mask to only use finite data
-            idx = np.isfinite(x) & np.isfinite(roll.values)
-            fit = np.polyfit(x[idx], roll.values[idx], 1)
+        # If there is less than 3 days of missing data, calculate slope.
+        # After discussions, we decided a 14-day regression doesn't make much sense if significant amount of data is not available. 
+        if len(self.df[var][self.df[var].notnull()]) > 264:
 
-            #fit = np.polyfit(x, roll.values, 1)
+            try:
+                roll = self.df[var].rolling(window=44,win_type="hann",min_periods=20).mean()
+                
+                # Edge case where one nan value was tanking the arrows. NaN came from filling in last value.
+                if np.sum(np.isnan(roll[20:])) == 1 :
+                    roll = roll[20:].dropna()
+                
+                else:
+                    roll = roll[20:]
+                
+                x = np.arange(roll.index.size) # = array([0, 1, 2, ..., 3598, 3599, 3600])
+                
+                # Mask to only use finite data
+                idx = np.isfinite(x) & np.isfinite(roll.values)
+                fit = np.polyfit(x[idx], roll.values[idx], 1)
 
-            
-            slope, intercept = fit[0], fit[1]
-            slope = slope * 24 * 14 # Convert to per 14
-            if np.isnan(slope):
-                # uPlot uses 'null' to fill empty data.
+                #fit = np.polyfit(x, roll.values, 1)
+
+                
+                slope, intercept = fit[0], fit[1]
+                slope = slope * 24 * 14 # Convert to per 14
+                if np.isnan(slope):
+                    # uPlot uses 'null' to fill empty data.
+                    slope = "null"
+                else:
+                    slope = round(slope,3)
+                    
+            except:
                 slope = "null"
-            else:
-                slope = round(slope,3)
-	            
-        except:
-            slope = "null"
         
+        else:
+            slope = 'null'
+
         return slope
 
 

@@ -127,7 +127,7 @@ class StationData:
             df_merged.index = df['dateTime']
             df_merged.drop(columns='dateTime', inplace=True)
             df_merged = df_merged.tz_convert('US/Pacific')
-            
+
             #Now apply conditional statement to remove bad qartod flags (=4)
             column_mapping = {}
             for i in range(len(self.short_names)):
@@ -142,12 +142,13 @@ class StationData:
 
             # Check if there is a variable "Dissolved Oxygen" with units "umol/L" to then convert to mg/L 
             if "Dissolved Oxygen" in self.short_names and "umol/L" in self.units:
-                print('DO converted for one of the stations')
                 # Convert "Dissolved Oxygen" values from µmol/L to mg/L
                 df_merged["Dissolved Oxygen"] = df_merged["Dissolved Oxygen"] * 0.03199
 
             # resampling
             df_hourly = df_merged.resample('1H').mean()
+            # Handle  daylight savings. Note this is not a good long-term solution and should resolve at a later time. 
+            df_hourly = df_hourly[df_hourly.index != '2023-11-05 01:00:00-08:00']
 
             if len(self.rolling) > 0:
                 for roll in self.rolling:
@@ -235,13 +236,15 @@ class StationData:
         trange = pd.date_range(start=now-dt.timedelta(days=14),end=now, freq='1H') # This will be the range of the data to fill
         return self.df.tz_localize(None).reindex(trange) # Reindex the dataframe to the new range, its that easy. Dont forget to drop the TZ info
         
-        
     def calculate_slope(self, var):
         """ Calculate slope of a 14-day linear regression. 
         Data are de-tided by applying a 44  hour hann-window convolution (ie low pass filter).
         The first window starts on the right side of the timeseries, so the first 20 hours of the filtered data are removed.
-        
         """
+        
+        #non_null_length = len(self.df['var'][self.df['var'].notnull()])
+        #print("Length of non-null values in 'var':", non_null_length)        
+        
         try:
             roll = self.df[var].rolling(window=44,win_type="hann",min_periods=20).mean()
             
@@ -281,8 +284,11 @@ class StationData:
             out_dir (str): the path to save the json file in locally. Filenames are based on the erddap-id specified in the parameter file.
             copy_to_web (bool, optional): Defaults to False. True will copy the file to the spyglass webserver to the hardcoded directory.
         """
+
         df_drop_na = self.fill_data_to_present()
+
         time = df_drop_na.index.values
+        
         seconds_in_seven_hours = 7 * 60 * 60 # Offset for timezone in seconds
         unix_time = [int((pd.to_datetime(t) - dt.datetime(1970, 1, 1)).total_seconds()) + seconds_in_seven_hours for t in time]
         
@@ -292,6 +298,10 @@ class StationData:
         # Replace NaN with NULL
         #df_drop_na = df_drop_na.fillna(value=None)
         df_drop_na = df_drop_na.where(pd.notna(df_drop_na), None)
+
+        #resent index of df
+        df_drop_na.reset_index(inplace=True)
+
         # Start JSON as dict
         dictionary = {
             "name": self.params['station-name'],

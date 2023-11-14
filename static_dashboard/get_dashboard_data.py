@@ -7,6 +7,7 @@ from . import plotting
 # import plotting # only uses if debugging in the __main__
 import numpy as np
 import os
+import simplejson
 
 
 class StationData:
@@ -139,6 +140,12 @@ class StationData:
             #Now we no longer need QC flags, can be removed from df_merged
             df_merged.drop(columns = self.qartod_names, inplace=True)
 
+            # Check if there is a variable "Dissolved Oxygen" with units "umol/L" to then convert to mg/L 
+            if "Dissolved Oxygen" in self.short_names and "umol/L" in self.units:
+                print('DO converted for one of the stations')
+                # Convert "Dissolved Oxygen" values from µmol/L to mg/L
+                df_merged["Dissolved Oxygen"] = df_merged["Dissolved Oxygen"] * 0.03199
+
             # resampling
             df_hourly = df_merged.resample('1H').mean()
 
@@ -246,7 +253,14 @@ class StationData:
                 roll = roll[20:]
             
             x = np.arange(roll.index.size) # = array([0, 1, 2, ..., 3598, 3599, 3600])
-            fit = np.polyfit(x, roll.values, 1)
+            
+            # Mask to only use finite data
+            idx = np.isfinite(x) & np.isfinite(roll.values)
+            fit = np.polyfit(x[idx], roll.values[idx], 1)
+
+            #fit = np.polyfit(x, roll.values, 1)
+
+            
             slope, intercept = fit[0], fit[1]
             slope = slope * 24 * 14 # Convert to per 14
             if np.isnan(slope):
@@ -276,7 +290,8 @@ class StationData:
             df_drop_na[var_name] = df_drop_na[var_name].round(2)    
         
         # Replace NaN with NULL
-        df_drop_na = df_drop_na.fillna(value="null")
+        #df_drop_na = df_drop_na.fillna(value=None)
+        df_drop_na = df_drop_na.where(pd.notna(df_drop_na), None)
         # Start JSON as dict
         dictionary = {
             "name": self.params['station-name'],
@@ -297,22 +312,28 @@ class StationData:
                 dictionary[var_name]['slope_scale'] = 10
             
             elif var_name == "Dissolved Oxygen":
-                dictionary[var_name]['slope_scale'] = 10
+                dictionary[var_name]['slope_scale'] = 200
             
             elif var_name == "Chlorophyll-a":
                 dictionary[var_name]['slope_scale'] = 40
             
             elif var_name == "Oxygen Saturation":
-                dictionary[var_name]['slope_scale'] = 40
+                dictionary[var_name]['slope_scale'] = 60
 
             elif var_name == "pH":
-                dictionary[var_name]['slope_scale'] = 1
+                dictionary[var_name]['slope_scale'] = 10
 
             elif var_name == "Salinity":
-                dictionary[var_name]['slope_scale'] = 3
+                dictionary[var_name]['slope_scale'] = 5
+
+            elif var_name == 'Nitrate':
+                dictionary[var_name]['slope_scale'] = 30
+
+            elif var_name == 'Fluorescence':
+                dictionary[var_name]['slope_scale'] = 10
             
         # Serializing json
-        json_object = json.dumps(dictionary, indent=4)
+        json_object = simplejson.dumps(dictionary, indent=4, ignore_nan=True)
         
         # Writing to sample.json
         FILE = os.path.join(out_dir,self.params['erddap-id']+".json")
